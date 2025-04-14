@@ -59,7 +59,9 @@ dependencies:
   # Real-time Updates
   firebase_database: ^10.3.8
   web_socket_channel: ^2.4.0
-
+  # http requests
+  http: ^0.13.6
+  flutter_secure_storage: ^9.0.0
   # Utilities
   intl: ^0.19.0
   logger: ^2.0.2+1
@@ -109,3 +111,9 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+<<<<<<< HEAD
+=======
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+>>>>>>> e890936f04e31256d119944632a5eee261d6c6d2
