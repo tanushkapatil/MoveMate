@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart'; // Import the LoginPage
 import 'dummy_data.dart'; // Import your dummy data file
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 class HomePageForDriver extends StatefulWidget {
   @override
@@ -91,12 +92,17 @@ class _HomePageForDriverState extends State<HomePageForDriver> {
                         ),
                       SizedBox(height: 20.0),
                       ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           String enteredCode = _busCodeController.text.trim();
                           if (_dummyBusCodes.contains(enteredCode)) {
                             setState(() {
                               _isBusCodeError = false;
                             });
+
+                            // Store bus code in SharedPreferences
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('bus_code', enteredCode);
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -106,7 +112,7 @@ class _HomePageForDriverState extends State<HomePageForDriver> {
                             );
                           } else {
                             setState(() {
-                              _isBusCodeError = true;
+                              _isBusCodeError = false;
                             });
                           }
                         },

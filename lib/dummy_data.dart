@@ -1,6 +1,6 @@
 List<Map<String, dynamic>> busRoutes = [
   {
-    'busCode': 'PMPML101',
+    'busCode': '101',
     'route': ['Swargate', 'Shivajinagar', 'Wakad'],
     'eta': '15 mins',
   },

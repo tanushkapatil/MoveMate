@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'driver_dashboard.dart'; // Import the DriverDashboard
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'driver_dashboard.dart';
 
 class LoginPage extends StatefulWidget {
   final String busCode;
@@ -18,43 +21,62 @@ class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
   bool _isLoading = false;
 
-  void _validateAndLogin() {
-    print('Login button pressed'); // Debug print
-    
+  void _validateAndLogin() async {
     setState(() {
       _isDriverIdError = _driverIdController.text.isEmpty;
       _isPasswordError = _passwordController.text.isEmpty;
-      _isLoading = true;
     });
 
-    if (_isDriverIdError || _isPasswordError) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
+    if (_isDriverIdError || _isPasswordError) return;
 
-    // Simple validation - you can modify this as needed
-    if (_driverIdController.text == 'driver' && _passwordController.text == 'password') {
-      print('Credentials valid, navigating to dashboard'); // Debug print
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DriverDashboard(busCode: widget.busCode),
-        ),
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://movemate-server-pearl.vercel.app/auth/login'), // Change if not using emulator
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': _driverIdController.text,
+          'password': _passwordController.text,
+        }),
       );
-    } else {
-      print('Invalid credentials'); // Debug print
-      setState(() {
-        _isPasswordError = true;
-        _isLoading = false;
-      });
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        final token = jsonResponse['token'];
+        final userId = jsonResponse['user_id'];
+
+        // Store token locally
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        await prefs.setString('user_id', userId);
+
+        print('Login success, token stored');
+
+        // Navigate to dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DriverDashboard(busCode: widget.busCode),
+          ),
+        );
+      } else {
+        final msg = json.decode(response.body)['detail'] ?? 'Invalid credentials';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        );
+        setState(() => _isPasswordError = true);
+      }
+    } catch (e) {
+      print('Login error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Invalid credentials. Try driver/password'),
+          content: Text('Unable to connect to the server.'),
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -106,17 +128,14 @@ class _LoginPageState extends State<LoginPage> {
                       TextField(
                         controller: _driverIdController,
                         decoration: InputDecoration(
-                          hintText: 'Driver ID',
+                          hintText: 'Driver Email ID',
                           filled: true,
                           fillColor: Color(0xFF2A2A3E),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8.0),
                             borderSide: BorderSide.none,
                           ),
-                          prefixIcon: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                          ),
+                          prefixIcon: Icon(Icons.person, color: Colors.white),
                         ),
                         style: TextStyle(color: Colors.white),
                         onChanged: (_) => setState(() {
@@ -130,10 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: Text(
                             'Please enter your Driver ID.',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16.0,
-                            ),
+                            style: TextStyle(color: Colors.red, fontSize: 16.0),
                           ),
                         ),
                       SizedBox(height: 16.0),
@@ -148,10 +164,7 @@ class _LoginPageState extends State<LoginPage> {
                             borderRadius: BorderRadius.circular(8.0),
                             borderSide: BorderSide.none,
                           ),
-                          prefixIcon: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                          ),
+                          prefixIcon: Icon(Icons.lock, color: Colors.white),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible
@@ -178,10 +191,7 @@ class _LoginPageState extends State<LoginPage> {
                           padding: const EdgeInsets.only(bottom: 12.0),
                           child: Text(
                             'Please enter your password.',
-                            style: TextStyle(
-                              color: Colors.red,
-                              fontSize: 16.0,
-                            ),
+                            style: TextStyle(color: Colors.red, fontSize: 16.0),
                           ),
                         ),
                       SizedBox(height: 20.0),
@@ -198,13 +208,10 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           child: _isLoading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
+                              ? CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
                                 )
                               : Text(
                                   'Login',
